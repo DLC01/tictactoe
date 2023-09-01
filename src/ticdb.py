@@ -8,9 +8,9 @@ def manage_db():
     file_path = "config.json"
 
     if os.path.exists(file_path):
-        db_username,db_password,db_database=open_config_file()
+        db_username,db_password,db_database=ticdata.open_config_file()
     else:
-        create_config_file()
+        ticdata.create_config_file()
 
     try:
         db = mysql.connector.connect(
