@@ -1,38 +1,11 @@
-import mysql.connector
+import src.ticdb as ticdb
 import random
 from colorama import init, Fore, Style
 
+cursor,db=ticdb.manage_db()
+
 # Initialize Colorama for colored output
 init(autoreset=True)
-
-# Connect to MySQL database
-# replace <username> and <password> with their respective values
-try:
-    db = mysql.connector.connect(
-        host="localhost",
-        user="<username>",
-        password="<password>",
-        database="tictactoe"
-    )
-    cursor = db.cursor()
-
-    # remove existing tables(if any)
-    cursor.execute("DROP TABLES IF EXISTS scores")
-    db.commit()
-
-    # Create the scoreboard table if it doesn't exist
-    create_table_sql = """
-    CREATE TABLE IF NOT EXISTS scores (
-        player_name VARCHAR(5) PRIMARY KEY,
-        wins INT
-    )
-    """
-    cursor.execute(create_table_sql)
-    db.commit()
-
-except mysql.connector.Error as err:
-    print(f"MySQL Error: {err}")
-    exit(1)
 
 # Initialize the Tic Tac Toe board
 def initialize_board():

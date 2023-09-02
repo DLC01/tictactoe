@@ -1,16 +1,18 @@
 import mysql.connector
-import sys
-import ticdata
+import src.ticdata as ticdata
 import os
 
 # Connect to MySQL database
 def manage_db():
-    file_path = "config.json"
+    file_path = "config.dat"
 
     if os.path.exists(file_path):
+        print("Config file found, Loading...")
         db_username,db_password,db_database=ticdata.open_config_file()
     else:
+        print("Config file not found, Creating one...")
         ticdata.create_config_file()
+        db_username,db_password,db_database=ticdata.open_config_file()
 
     try:
         db = mysql.connector.connect(
@@ -21,14 +23,18 @@ def manage_db():
         )
     except mysql.connector.Error as e:
         print(f"Error connecting to Database: {e}")
-        sys.exit(1)
+        exit(1)
 
     # Get Cursor
     cursor = db.cursor()
 
-    #create table if it doesnt exist
+    # Remove existing tables(if any)
+    cursor.execute("DROP TABLE IF EXISTS scores")
+    db.commit
+
+    # Create table if it doesnt exist
     create_table_sql = """
-    CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
+    CREATE TABLE IF NOT EXISTS scores (
         player_name VARCHAR(255) PRIMARY KEY,
         wins INT
     )   
@@ -36,3 +42,4 @@ def manage_db():
     cursor.execute(create_table_sql)
     db.commit()
 
+    return cursor, db
