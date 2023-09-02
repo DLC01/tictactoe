@@ -14,14 +14,14 @@ def create_config_file():
 
     global config_filename
 
-    # Write the data to the JSON file
+    # Write the data to the binary file
     with open(config_filename, "wb") as config_file:
         pickle.dump(config_data, config_file)
 
 def open_config_file():
     global config_filename
     try:
-        # Attempt to open and read the JSON file
+        # Attempt to open and read the binary file
         with open(config_filename, "rb") as config_file:
             config_data = pickle.load(config_file)
 
