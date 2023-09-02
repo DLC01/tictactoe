@@ -1,39 +1,43 @@
 import mysql.connector
-import sys
 import random
 from colorama import init, Fore, Style
 
-# Initialize colorama for colored output
+# Initialize Colorama for colored output
 init(autoreset=True)
 
 # Connect to MySQL database
+# replace <username> and <password> with their respective values
 try:
     db = mysql.connector.connect(
+        host="localhost",
         user="<username>",
         password="<password>",
-        host="localhost",
         database="tictactoe"
-
     )
-except mysql.connector.Error as e:
-    print(f"Error connecting to MariaDB Platform: {e}")
-    sys.exit(1)
+    cursor = db.cursor()
 
-# Get Cursor
-cursor = db.cursor()
+    # remove existing tables(if any)
+    cursor.execute("DROP TABLES IF EXISTS scores")
+    db.commit()
 
-#create table if it doesnt exist
-create_table_sql = """
-CREATE TABLE IF NOT EXISTS tic_tac_toe_scores (
-    player_name VARCHAR(255) PRIMARY KEY,
-    wins INT
-)
-"""
-cursor.execute(create_table_sql)
-db.commit()
+    # Create the scoreboard table if it doesn't exist
+    create_table_sql = """
+    CREATE TABLE IF NOT EXISTS scores (
+        player_name VARCHAR(5) PRIMARY KEY,
+        wins INT
+    )
+    """
+    cursor.execute(create_table_sql)
+    db.commit()
+
+except mysql.connector.Error as err:
+    print(f"MySQL Error: {err}")
+    exit(1)
 
 # Initialize the Tic Tac Toe board
-board = [' ' for _ in range(9)]
+def initialize_board():
+    board = [' ' for _ in range(9)]
+    return board
 
 # Display the Tic Tac Toe board with colors
 def display_board(board):
@@ -59,49 +63,85 @@ def update_scoreboard(player_name):
                    "ON DUPLICATE KEY UPDATE wins = wins + 1", (player_name,))
     db.commit()
 
-# AI makes a random move
-def ai_move():
-    return random.choice([i for i, x in enumerate(board) if x == ' '])
+# Play a single round of Tic Tac Toe
+def play_round():
+    player_names = ['X', 'O']
+    current_player = random.choice(player_names)
+    board = initialize_board()
 
-# Main game loop
-def main():
-    print(Fore.YELLOW + "Welcome to Tic Tac Toe!")
-    player_name = input("Enter your name: ")
-    current_player = random.choice(['X', 'O'])
-    is_ai_turn = False
+    print(Fore.YELLOW + f"{current_player} goes first!")
 
+    # Main game loop
     while True:
-        print(Fore.CYAN + "\nCurrent Board:")
         display_board(board)
-        
-        if current_player == 'X':
-            move = int(input(Fore.GREEN + f"\n{current_player}'s turn. Enter your move (0-8): "))
-        else:
-            print(Fore.GREEN + f"\n{current_player} (AI)'s turn.")
-            move = ai_move()
+        move = input(Fore.GREEN + f"\n{current_player}'s turn. Enter your move (0-8): ")
 
-        if board[move] == ' ':
-            board[move] = current_player
-            if check_winner(board, current_player):
-                print(Fore.CYAN + "\nUpdated Board:")
-                display_board(board)
-                if current_player == 'X':
-                    print(Fore.GREEN + f"\n{current_player} wins!")
-                    update_scoreboard(player_name)
-                else:
-                    print(Fore.GREEN + f"\n{current_player} (AI) wins!")
-                break
-            elif ' ' not in board:
-                print(Fore.CYAN + "\nUpdated Board:")
-                display_board(board)
-                print(Fore.GREEN + "\nIt's a draw!")
-                break
-            current_player = 'O' if current_player == 'X' else 'X'
-        else:
-            print(Fore.RED + "\nInvalid move. Try again.")
+        if not move:
+            print(Fore.RED + "Invalid input. Please enter a move (0-8).")
+            continue
 
-    db.close()
+        try:
+            move = int(move)
+            if move < 0 or move > 8 or board[move] != ' ':
+                raise ValueError("Invalid move.")
+        except (ValueError, IndexError):
+            print(Fore.RED + "Invalid move. Try again.")
+            continue
+
+        board[move] = 'X' if current_player == player_names[0] else 'O'
+
+        if check_winner(board, current_player):
+            display_board(board)
+            if current_player == 'X':
+                print(Fore.GREEN + f"{current_player} wins this round!")
+                update_scoreboard(current_player)
+            else:
+                print(Fore.GREEN + f"{current_player} wins this round")
+                update_scoreboard(current_player)
+            break
+        elif ' ' not in board:
+            display_board(board)
+            print(Fore.GREEN + "It's a draw!")
+            break
+
+        current_player = player_names[0] if current_player == player_names[1] else player_names[1]
+
+# Play the game with the specified number of rounds
+def play_game(num_rounds):
+    try:
+        for _ in range(num_rounds):
+            print(Fore.YELLOW + f"\nRound {_ + 1}:")
+            play_round()
+
+        # Display the final scoreboard and determine the winner
+        print(Fore.YELLOW + "\nFinal Scoreboard:")
+        cursor.execute("SELECT * FROM scores")
+        scores = cursor.fetchall()
+        winner = None
+        winning_score = -1
+
+        for score in scores:
+            print(f"{score[0]}: {score[1]} wins")
+            if score[1] > winning_score:
+                winner = score[0]
+                winning_score = score[1]
+            elif score[1] == winning_score:
+                winner = "It's a tie!"
+
+        print(Fore.YELLOW + f"\nOverall Winner: {winner}")
+
+    except KeyboardInterrupt:
+        print("\nGame terminated.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+    finally:
+        db.close()
 
 if __name__ == "__main__":
-    main()
+    try:
+        num_rounds = int(input("Enter the number of rounds: "))
+        play_game(num_rounds)
+    except ValueError:
+        print(Fore.RED + "Invalid input. Please enter a valid number of rounds.")
 
