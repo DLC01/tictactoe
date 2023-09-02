@@ -1,34 +1,10 @@
 import src.ticdb as ticdb
 import random
-from colorama import init, Fore, Style
+import src.ticboard as ticboard
+from colorama import Fore
 
+# Initialize database
 cursor,db=ticdb.manage_db()
-
-# Initialize Colorama for colored output
-init(autoreset=True)
-
-# Initialize the Tic Tac Toe board
-def initialize_board():
-    board = [' ' for _ in range(9)]
-    return board
-
-# Display the Tic Tac Toe board with colors
-def display_board(board):
-    print(Fore.WHITE + ' ' + board[0] + ' | ' + board[1] + ' | ' + board[2])
-    print('-----------')
-    print(' ' + board[3] + ' | ' + board[4] + ' | ' + board[5])
-    print('-----------')
-    print(' ' + board[6] + ' | ' + board[7] + ' | ' + board[8])
-
-# Check for a win condition
-def check_winner(board, player):
-    win_conditions = [(0, 1, 2), (3, 4, 5), (6, 7, 8),
-                      (0, 3, 6), (1, 4, 7), (2, 5, 8),
-                      (0, 4, 8), (2, 4, 6)]
-    for condition in win_conditions:
-        if all(board[i] == player for i in condition):
-            return True
-    return False
 
 # Update scoreboard
 def update_scoreboard(player_name):
@@ -40,13 +16,13 @@ def update_scoreboard(player_name):
 def play_round():
     player_names = ['X', 'O']
     current_player = random.choice(player_names)
-    board = initialize_board()
+    board = ticboard.initialize_board()
 
     print(Fore.YELLOW + f"{current_player} goes first!")
 
     # Main game loop
     while True:
-        display_board(board)
+        ticboard.display_board(board)
         move = input(Fore.GREEN + f"\n{current_player}'s turn. Enter your move (0-8): ")
 
         if not move:
@@ -63,8 +39,8 @@ def play_round():
 
         board[move] = 'X' if current_player == player_names[0] else 'O'
 
-        if check_winner(board, current_player):
-            display_board(board)
+        if ticboard.check_winner(board, current_player):
+            ticboard.display_board(board)
             if current_player == 'X':
                 print(Fore.GREEN + f"{current_player} wins this round!")
                 update_scoreboard(current_player)
@@ -73,7 +49,7 @@ def play_round():
                 update_scoreboard(current_player)
             break
         elif ' ' not in board:
-            display_board(board)
+            ticboard.display_board(board)
             print(Fore.GREEN + "It's a draw!")
             break
 
