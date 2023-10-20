@@ -30,7 +30,7 @@ def manage_db():
 
     # Remove existing tables(if any)
     cursor.execute("DROP TABLE IF EXISTS scores")
-    db.commit
+    db.commit()
 
     # Create table if it doesnt exist
     create_table_sql = """
